@@ -1,0 +1,354 @@
+##//== Dockerfile Sample ==
+#
+###//=========================
+ARG BASE_VER=ubuntu-22.04
+ARG BASE_PRE=crops/poky
+FROM $BASE_PRE:$BASE_VER
+
+ARG DBSET=jammy
+
+ENV IDSET=sw
+ENV IDNUM=1000
+ENV IDTZD=Asia/Taipei
+
+###//=========================
+#--ARG ENV_CTL="NO"
+ARG LOC_CTL="YES"
+
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+RUN set -xe; \
+    HOST_CTL=${HOST_CTL:-YES} && if [ "$HOST_CTL" = "YES" ]; then \
+        rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-get install -y --no-install-recommends \
+            apt-transport-https apt-utils \
+            software-properties-common \
+            openssh-server \
+            lsb-release \
+            sudo \
+            gnupg \
+            tzdata \
+            tofrodos \
+            vim nano \
+            zip unzip \
+            curl wget \
+            net-tools \
+            ; \
+        DB_CTL=${DB_CTL:-YES} && if [ "$DB_CTL" = "YES" ]; then \
+            sed -i '0,/^# deb-src/s//deb-src/' /etc/apt/sources.list; \
+            echo "deb http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="focal"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            target="bionic"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="3B4FE6ACC0B21F32"; verget="C0B21F32"; \
+            ttkey1="hkp://keyserver.ubuntu.com:80"; \
+            ttkey2="hkp://pgp.mit.edu:80"; \
+            gpg --keyserver ${ttkey1} --recv-key ${target} || gpg --keyserver ${ttkey2} --recv-key ${target}; gpg -a --export ${verget} | gpg --dearmor -o /etc/apt/trusted.gpg.d/sw.gpg; \
+            \
+            rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+            apt-get clean && apt-get update --fix-missing; \
+            add-apt-repository universe -y; \
+            add-apt-repository restricted -y; \
+            add-apt-repository multiverse -y; \
+            apt-get clean && apt-get update --fix-missing; \
+        fi; \
+        ##//------------------------------------------------
+        YOCTO_CTL=${YOCTO_CTL:-NO} && if [ "$YOCTO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                build-essential \
+                chrpath \
+                cpio \
+                diffstat \
+                fluxbox \
+                gawk \
+                iproute2 \
+                iputils-ping \
+                locales \
+                screen \
+                socat \
+                sysstat \
+                texinfo \
+                tightvncserver \
+                tmux \
+                xz-utils \
+                zstd \
+                git-core \
+                git-lfs \
+                subversion \
+                \
+                python3-dev \
+                python3-pip \
+                python3-virtualenv \
+                \
+                python3-git \
+                python3-jinja2 \
+                python3-pexpect \
+                pylint \
+                xterm \
+                file \
+                lz4 \
+                \
+                libegl1-mesa libegl1-mesa-dev \
+                libsdl1.2-dev \
+                ; \
+        fi; \
+        ANDRO_CTL=${ANDRO_CTL:-YES} && if [ "$ANDRO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                bison \
+                flex \
+                fontconfig \
+                x11proto-core-dev \
+                xsltproc \
+                zlib1g-dev \
+                libgl1-mesa-dev \
+                libx11-dev \
+                libxml2-utils \
+                libc6-dev-i386 \
+                lib32z1-dev \
+                ; \
+            \
+            apt-get install -y libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev; \
+            apt-get install -y lib32ncurses5; \
+            apt-get install -y lib32ncurses-dev libncurses-dev libglib2.0-dev; \
+            wget -O /usr/local/bin/gn http://storage.googleapis.com/chromium-gn/3fd43e5e0dcc674f0a0c004ec290d04bb2e1c60e; \
+            chmod +x /usr/local/bin/gn; ln -s /usr/local/bin/gn /usr/bin/gn; \
+        fi; \
+        REPO_CTL=${REPO_CTL:-YES} && if [ "$REPO_CTL" = "YES" ]; then \
+            target="v2.32"; curl https://raw.githubusercontent.com/GerritCodeReview/git-repo/${target}/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        else \
+            curl -O https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        fi; \
+        add-apt-repository ppa:deadsnakes/ppa -y; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-cache policy python3.9; \
+        apt-get install -y python3.9-dev python3.9-distutils; \
+        cd /usr/bin; ln -sf python3.9 python3; ln -sf python3.9-config python3-config; ln -sf pydoc3.9 pydoc3; \
+        cd /usr/lib/python3/dist-packages; \
+        lv=`find -iname apt_pkg.cpython-*-x86_64-linux-gnu.so` && echo "$lv" "apt_pkg.so" | xargs ln -sf; \
+        apt-get install -y python2-dev; \
+        cd /usr/bin; if [ -e python2 ]; then ln -sf python2 python; fi; \
+        ##//------------------------------------------------
+        CROSS_CTL=${CROSS_CTL:-YES} && if [ "$CROSS_CTL" = "YES" ]; then \
+            apt-get install -y g++-multilib; apt-get install -y g++-aarch64-linux-gnu; \
+            ##//apt-get install -y g++-11-multilib; apt-get install -y g++-11-aarch64-linux-gnu; \
+            apt-get install -y clang; \
+            apt-get install -y \
+                dpkg-cross \
+                bc \
+                m4 \
+                ccache \
+                libswitch-perl \
+                libreadline-dev \
+                libssl-dev \
+                openssl \
+                rpm2cpio \
+                rsync \
+                ; \
+            apt-get install -y libmagic1; \
+            apt-get install -y kmod fakeroot; \
+            apt-get build-dep -y linux; \
+        fi; \
+    fi; \
+    ##//------------------------------------------------------------------------
+    CROPS_CTL=${CROPS_CTL:-YES} && if [ "$CROPS_CTL" = "YES" ]; then \
+        USER_CTL=${USER_CTL:-YES} && if [ "$USER_CTL" = "YES" ]; then \
+            ##//替換登入名稱
+            lvn="poky-entry.py"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "{lvt}" ]; then sed -i "s/pokyuser/$IDSET/g" {lvt}; fi; \
+            ##//動態帳號設定(目錄權限對應)
+            lvn="poky-entry.py"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then \
+                ##修補 => 對應預設
+                sed -i "/if os.getcwd()/i\cname = os.getenv(\"IDSET\")" {lvt}; \
+                sed -i "/if os.getcwd()/i\cpath = \'/home/\' + cname" {lvt}; \
+                sed -i "/if os.getcwd()/i\args.workdir = os.getcwd()" {lvt}; \
+                ##sed -i "/if os.getcwd()/i\args.workdir = \"/home/\" + cname" {lvt}; \
+                sed -i '/if os.getcwd()/{x;p;x;}' {lvt}; \
+                sed -i "/if os.getcwd()/,+4d" {lvt}; \
+                sed -i "/elif args.workdir/,+4d" {lvt}; \
+                ##修補 => 對應個人
+                ##優先權(1) [-w] 排除預設&處理例外
+                sed -i "/usersetup.py --username/i\elif args.workdir != \'/home\' and os.path.exists(args.workdir):" {lvt}; \
+                sed -i "/usersetup.py --username/i\    idargs = \"--uid={} --gid={}\".format(os.stat(os.getcwd()).st_uid, os.stat(os.getcwd()).st_gid)" {lvt}; \
+                sed -i "/usersetup.py --username/i\    if os.stat(os.getcwd()).st_uid == 0 or os.stat(os.getcwd()).st_gid == 0:" {lvt}; \
+                sed -i "/usersetup.py --username/i\        if cname != \"root\":" {lvt}; \
+                sed -i "/usersetup.py --username/i\            idargs = \"--uid=$IDNUM --gid=$IDNUM\"" {lvt}; \
+                sed -i '/usersetup.py --username/{x;p;x;}' {lvt}; \
+                ##優先權(2) [-e] 處理例外
+                sed -i "/usersetup.py --username/i\elif os.path.exists(cpath):" {lvt}; \
+                sed -i "/usersetup.py --username/i\    idargs = \"--uid={} --gid={}\".format(os.stat(cpath).st_uid, os.stat(cpath).st_gid)" {lvt}; \
+                sed -i '/usersetup.py --username/{x;p;x;}' {lvt}; \
+                ##優先權(3) 預設
+                sed -i "/usersetup.py --username/i\else:" {lvt}; \
+                sed -i "/usersetup.py --username/i\    idargs = \"--uid=$IDNUM --gid=$IDNUM\"" {lvt}; \
+                sed -i '/usersetup.py --username/{x;p;x;}' {lvt}; \
+                ##環境資訊
+                MSG_CTL=${MSG_CTL:-NO} && if [ "$MSG_CTL" = "YES" ]; then \
+                sed -i "/usersetup.py --username/i\print(\"==========[poky-entry.py]\")" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"argsid  \",args.id)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"workdir \",args.workdir)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"getcwd  \",os.getcwd())" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"st_uid  \",os.stat(os.getcwd()).st_uid)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"st_gid  \",os.stat(os.getcwd()).st_gid)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"cname   \",cname)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"cpath   \",cpath)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print(\"idargs  \",idargs)" {lvt}; \
+                sed -i "/usersetup.py --username/i\print()" {lvt}; \
+                sed -i '/usersetup.py --username/{x;p;x;}' {lvt}; \
+                fi; \
+                sed -i "s/usersetup.py --username=$IDSET/usersetup.py --username={wn}/g" {lvt}; \
+                sed -i 's/.format(wd=args.workdir/.format(wn=cname, wd=args.workdir/g' {lvt}; \
+            fi; \
+            ##//帳號建立
+            lvn="restrict_useradd.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then \
+                sed -i "/useradd -N -g/i\    echo \"==========[restrict_useradd.sh]\"" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\$uid      => '\$uid" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\$gid      => '\$gid" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\$username => '\$username" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\$IDSET    => '\$IDSET" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\$skelarg  => '\$skelarg" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\pwd       => '\$(pwd)" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo '\whoami    => '\$(whoami)" ${lvt}; \
+                sed -i "/useradd -N -g/{x;p;x;}"  ${lvt}; \
+                ##建立帳號 IDSET <=> username
+                sed -i "/useradd -N -g/i\    if [ -d \"\/home\/\$username\" ]; then" ${lvt}; \
+                sed -i "/useradd -N -g/i\        1111111111" ${lvt}; \
+                sed -i "/useradd -N -g/i\    else" ${lvt}; \
+                sed -i "/useradd -N -g/i\        2222222222" ${lvt}; \
+                sed -i "/useradd -N -g/i\    fi" ${lvt}; \
+                sed -i "/useradd -N -g/i\    sed -i \"s/sudo:x:27:/sudo:x:27:\$username/g\" /etc/group" ${lvt}; \
+                sed -i "/useradd -N -g/i\    if [ -f "/etc/sudoers.usersetup" ]; then rm -f /etc/sudoers.usersetup; fi;" ${lvt}; \
+                sed -i "/useradd -N -g/i\    touch /etc/sudoers.usersetup;" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo \"\$username ALL=(ALL:ALL) NOPASSWD:ALL\" >> /etc/sudoers.usersetup" ${lvt}; \
+                sed -i "/useradd -N -g/i\    echo \"%\$username ALL=(ALL:ALL) NOPASSWD:ALL\" >> /etc/sudoers.usersetup" ${lvt}; \
+                sed -i "/useradd -N -g/{x;p;x;}"  ${lvt}; \
+                ##保留預設帳號(帳號群組保留 IDSET <=> sw)
+                USR_CTL=${USR_CTL:-NO} && if [ "$USR_CTL" = "YES" ]; then \
+                sed -i "/useradd -N -g/i\    if [ \"\$username\" != \"$IDSET\" ]; then" ${lvt}; \
+                sed -i "/useradd -N -g/i\        3333333333" ${lvt}; \
+                ##sed -i "/useradd -N -g/i\        echo \"\$IDSET:x:\$IDNUM\" >> /etc/group" ${lvt}; \
+                sed -i "/useradd -N -g/i\        sed -i \"s/sudo:x:27:\$username/sudo:x:27:\$username,\$IDSET/g\" /etc/group" ${lvt}; \
+                sed -i "/useradd -N -g/i\        echo \"\$IDSET ALL=(ALL:ALL) NOPASSWD:ALL\" >> /etc/sudoers.usersetup" ${lvt}; \
+                ##sed -i "/useradd -N -g/i\        echo \"\%\$IDSET ALL=(ALL:ALL) NOPASSWD:ALL\" >> /etc/sudoers.usersetup" ${lvt}; \
+                ##sed -i "/useradd -N -g/i\        sed -i \'\$d\' /etc/sudoers.\$IDSET" ${lvt}; \
+                sed -i "/useradd -N -g/{x;p;x;}"  ${lvt}; \
+                sed -i "/useradd -N -g/i\    fi" ${lvt}; \
+                fi; \
+                ##原先建立帳號方法停用
+                sed -i "s/useradd -N -g/##useradd -N -g/g" ${lvt}; \
+                ##處理原先無法處理替代
+                sed -i "s/1111111111/useradd -M \$skelarg -N -g \$gid -o -u \$uid \"\$username\"/g" ${lvt}; \
+                sed -i "s/2222222222/useradd -m \$skelarg -N -g \$gid -o -u \$uid \"\$username\"/g" ${lvt}; \
+                sed -i "s/3333333333/useradd -m \$skelarg -N -g \$IDNUM               \"\$IDSET\"/g" ${lvt}; \
+                ##sed -i "s/3333333333/useradd -m \$skelarg -N -g \$IDNUM -o -u \$IDNUM \"\$IDSET\"/g" ${lvt}; \
+            fi; \
+            ##//個人環境設定
+            lvn="poky-launch.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then \
+                sed -i "/exec \"\$@\"/i\    echo \"==========\"" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo '\$@        => '\$@" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo '\$workdir  => '\$workdir" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo '\$HOME     => '\$HOME" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo '\$USER     => '\$USER" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo '\$uid \$gid => '\$(id -u) \$(id -g)" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    echo \"==========\"" ${lvt}; \
+                sed -i "/exec \"\$@\"/{x;p;x;}" ${lvt}; \
+                ##轉載GIT設定(個人)
+                sed -i "/exec \"\$@\"/i\    if [ \"\$workdir\" != \"\$HOME\" ]; then" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\        if [ -f \".gitconfig\" ]; then cp .git* ~\" fi;" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    fi" ${lvt}; \
+                sed -i "/exec \"\$@\"/{x;p;x;}" ${lvt}; \
+                ##對應GIT設定(主機)
+                sed -i "/exec \"\$@\"/i\    if [ -f \"/etc/hosts\" ]; then" ${lvt}; \
+                #sed -i "/exec \"\$@\"/i\        echo -e \"10.5.254.99\tmce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw\" | sudo tee /etc/hosts" ${lvt}; \
+                #sed -i "/exec \"\$@\"/i\        echo 'echo -e \"10.5.254.99\tmce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw\" >> /etc/hosts' | sudo sh" ${lvt}; \
+                ##sed -i "/exec \"\$@\"/i\        sudo sh -c 'echo -e \"10.5.254.99\tmce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw\" >> /etc/hosts'" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\        sudo sh -c \"echo 10.5.254.99  mce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw >> /etc/hosts\"" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    fi" ${lvt}; \
+                sed -i "/exec \"\$@\"/{x;p;x;}" ${lvt}; \
+                ##提示去除
+                sed -i "/exec \"\$@\"/i\    touch ~/.sudo_as_admin_successful" ${lvt}; \
+                sed -i "/exec \"\$@\"/{x;p;x;}" ${lvt}; \
+                ##移除無用目錄
+                sed -i "/exec \"\$@\"/i\    if [ -d \"\/home\/yoctouser\" ]; then sudo rm -rf /home/yoctouser; fi;" ${lvt}; \
+                sed -i "/exec \"\$@\"/i\    if [ -d \"\/home\/usersetup\" ]; then sudo rm -rf /home/usersetup; fi;" ${lvt}; \
+                sed -i "/exec \"\$@\"/{x;p;x;}"  ${lvt}; \
+            fi; \
+        fi; \
+    fi; \
+    ENV_CTL=${ENV_CTL:-YES} && if [ "$ENV_CTL" = "YES" ]; then \
+        if [ -f "/etc/sudoers" ]; then \
+            sed -i 's/root\tALL=(ALL:ALL) ALL/root\tALL=(ALL:ALL) NOPASSWD:ALL/g' /etc/sudoers; \
+            sed -i 's/\%sudo\tALL=(ALL:ALL) ALL/\%sudo\tALL=(ALL:ALL) NOPASSWD:ALL/g' /etc/sudoers; \
+        fi; \
+        echo 'dash dash/sh boolean false' | debconf-set-selections; \
+        dpkg-reconfigure -f noninteractive dash; \
+        apt-get install -y locales language-pack-zh-hant language-pack-zh-hant-base; \
+        /usr/sbin/locale-gen zh_TW.UTF-8 en_US.UTF-8; \
+        dpkg-reconfigure -f noninteractive locales; \
+        update-locale LANGUAGE="en_US" LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8"; \
+        if [ "$IDTZD" != "Etc/UTC" ]; then \
+            ln -snf "/usr/share/zoneinfo/$IDTZD" /etc/localtime; \
+            echo $IDTZD > /etc/timezone; \
+            dpkg-reconfigure -f noninteractive tzdata; \
+        fi; \
+        LOC_CTL=${LOC_CTL:-NO} && if [ "$LOC_CTL" = "YES" ]; then \
+            ##//(=>ROOT)
+            lvn="dockerdumb.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo "if [ \"\$IDTZD\" != \"\" ] && [ \"\$IDTZD\" != \"$IDTZD\" ]; then" >> ${lvt}; \
+                echo "    ln -snf /usr/share/zoneinfo/\"\$IDTZD\" /etc/localtime" >> ${lvt}; \
+                echo "    sh -c 'echo \"\$IDTZD\" > /etc/timezone'" >> ${lvt}; \
+                echo "    sh -c 'dpkg-reconfigure -f noninteractive tzdata'" >> ${lvt}; \
+                echo "fi" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ -f "/etc/hosts" ]; then' >> ${lvt}; \
+                echo '    sudo sh -c "echo 10.5.254.99  mce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw >> /etc/hosts"' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+                echo >> ${lvt}; \
+            fi; \
+            ##//(=>USER)
+            lvn="dockerpoky.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo 'touch ~/.sudo_as_admin_successful' >> ${lvt}; \
+            fi; \
+        fi; \
+        lvn="dockertask.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+        if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+        touch ${lvt}; if [ -f "${lvt}" ]; then \
+            echo 1 > ${lvt}; \
+            sed -i '$a #!/bin/bash'                              ${lvt}; \
+            sed -i '$G'                                          ${lvt}; \
+            sed -i '$a #taskshell()'                             ${lvt}; \
+            sed -i '$a #{'                                       ${lvt}; \
+            sed -i '$a \    chmod 755 /usr/bin/*.sh 2>/dev/null' ${lvt}; \
+            sed -i '$a \    chmod 755 /usr/bin/*.py 2>/dev/null' ${lvt}; \
+            sed -i '$a #}'                                       ${lvt}; \
+            sed -i '$G'                                          ${lvt}; \
+            sed -i '$a #taskshell'                               ${lvt}; \
+            sed -i '1d'                                          ${lvt}; \
+            /bin/bash ${lvt}; sh -c "rm -f ${lvt}"; \
+        fi; \
+    fi; \
+    rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+    apt-get clean;
+
+WORKDIR /home
+ENTRYPOINT ["/usr/bin/dumb-entry.sh", "/usr/bin/dumb-init", "--", "/usr/bin/poky-entry.py"]
+CMD ["/bin/bash"]

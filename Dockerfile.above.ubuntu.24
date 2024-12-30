@@ -1,0 +1,180 @@
+##//== Dockerfile Sample ==
+#
+###//=========================
+ARG BASE_VER=24.04
+ARG BASE_PRE=ubuntu
+FROM $BASE_PRE:$BASE_VER
+
+ARG DBSET=noble
+
+ENV IDSET=sw
+ENV IDNUM=1000
+ENV IDTZD=Asia/Taipei
+ENV IDMSG=0
+ENV IDNON=0
+
+###//=========================
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+
+##ADD https://raw.githubusercontent.com/lijenchen/Docker/refs/heads/main/dockersetup_brain.sh /usr/bin/
+##COPY dockersetup_brain.sh /usr/bin/
+RUN set -xe; \
+    HOST_CTL=${HOST_CTL:-YES} && if [ "$HOST_CTL" = "YES" ]; then \
+        rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-get install -y --no-install-recommends \
+            apt-transport-https apt-utils \
+            software-properties-common \
+            openssh-server \
+            lsb-release \
+            sudo \
+            gnupg \
+            tzdata \
+            tofrodos \
+            vim nano \
+            zip unzip \
+            curl wget \
+            net-tools \
+            ; \
+        DB_CTL=${DB_CTL:-YES} && if [ "$DB_CTL" = "YES" ]; then \
+            sed -i '0,/^# deb-src/s//deb-src/' /etc/apt/sources.list; \
+            echo "deb http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="jammy"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="focal"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            target="bionic"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="3B4FE6ACC0B21F32"; verget="C0B21F32"; \
+            ttkey1="hkp://keyserver.ubuntu.com:80"; \
+            ttkey2="hkp://pgp.mit.edu:80"; \
+            gpg --keyserver ${ttkey1} --recv-key ${target} || gpg --keyserver ${ttkey2} --recv-key ${target}; gpg -a --export ${verget} | gpg --dearmor -o /etc/apt/trusted.gpg.d/sw.gpg; \
+            \
+            rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+            apt-get clean && apt-get update --fix-missing; \
+            add-apt-repository universe -y; \
+            add-apt-repository restricted -y; \
+            add-apt-repository multiverse -y; \
+            apt-get clean && apt-get update --fix-missing; \
+        fi; \
+        ##//------------------------------------------------
+        YOCTO_CTL=${YOCTO_CTL:-YES} && if [ "$YOCTO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                build-essential \
+                chrpath \
+                cpio \
+                diffstat \
+                fluxbox \
+                gawk \
+                iproute2 \
+                iputils-ping \
+                locales \
+                screen \
+                socat \
+                sysstat \
+                texinfo \
+                tightvncserver \
+                tmux \
+                xz-utils \
+                zstd \
+                git-core \
+                git-lfs \
+                subversion \
+                \
+                python3-dev \
+                python3-pip \
+                python3-virtualenv \
+                \
+                python3-git \
+                python3-jinja2 \
+                python3-pexpect \
+                pylint \
+                xterm \
+                file \
+                lz4 \
+                ; \
+        fi; \
+        ANDRO_CTL=${ANDRO_CTL:-YES} && if [ "$ANDRO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                bison \
+                flex \
+                fontconfig \
+                x11proto-core-dev \
+                xsltproc \
+                zlib1g-dev \
+                libgl1-mesa-dev \
+                libx11-dev \
+                libxml2-utils \
+                libc6-dev-i386 \
+                lib32z1-dev \
+                ; \
+            \
+            apt-get install -y libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev; \
+            apt-get install -y lib32ncurses5; \
+            apt-get install -y lib32ncurses-dev libncurses-dev libglib2.0-dev; \
+            wget -O /usr/local/bin/gn http://storage.googleapis.com/chromium-gn/3fd43e5e0dcc674f0a0c004ec290d04bb2e1c60e; \
+            chmod +x /usr/local/bin/gn; ln -s /usr/local/bin/gn /usr/bin/gn; \
+        fi; \
+        REPO_CTL=${REPO_CTL:-YES} && if [ "$REPO_CTL" = "YES" ]; then \
+            target="v2.32"; curl https://raw.githubusercontent.com/GerritCodeReview/git-repo/${target}/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        else \
+            curl -O https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        fi; \
+        add-apt-repository ppa:deadsnakes/ppa -y; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-cache policy python3.9; \
+        apt-get install -y python3.9-dev python3.9-distutils; \
+        cd /usr/bin; ln -sf python3.9 python3; ln -sf python3.9-config python3-config; ln -sf pydoc3.9 pydoc3; \
+        cd /usr/lib/python3/dist-packages; \
+        lv=`find -iname apt_pkg.cpython-*-x86_64-linux-gnu.so` && echo "$lv" "apt_pkg.so" | xargs ln -sf; \
+        apt-get install -y python2-dev; \
+        cd /usr/bin; if [ -e python2 ]; then ln -sf python2 python; fi; \
+        ##//------------------------------------------------
+        CROSS_CTL=${CROSS_CTL:-YES} && if [ "$CROSS_CTL" = "YES" ]; then \
+            apt-get install -y g++-multilib; apt-get install -y g++-aarch64-linux-gnu; \
+            ##//apt-get install -y g++-14-multilib; apt-get install -y g++-14-aarch64-linux-gnu; \
+            apt-get install -y clang; \
+            apt-get install -y \
+                dpkg-cross \
+                bc \
+                m4 \
+                ccache \
+                libswitch-perl \
+                libreadline-dev \
+                libssl-dev \
+                openssl \
+                rpm2cpio \
+                rsync \
+                ; \
+            apt-get install -y libmagic1t64; \
+            apt-get install -y kmod fakeroot; \
+            apt-get build-dep -y linux; \
+        fi; \
+    fi; \
+    #//-------------------------------------------
+    target="dockersetup_brain.sh"; \
+    wget -O /usr/bin/${target} --no-check-certificate https://raw.githubusercontent.com/lijenchen/Docker/main/${target}; \
+    if [ -f /usr/bin/${target} ]; then bash /usr/bin/${target}; fi; \
+    #//-------------------------------------------
+    rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+    apt-get clean;
+
+WORKDIR /home
+ENTRYPOINT ["/usr/bin/dumb-entry.sh", "/usr/bin/dumb-init", "--", "/usr/bin/poky-entry.py"]
+CMD ["/bin/bash"]

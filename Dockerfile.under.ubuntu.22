@@ -1,0 +1,528 @@
+##//== Dockerfile Sample ==
+#
+###//=========================
+ARG BASE_VER=22.04
+ARG BASE_PRE=ubuntu
+FROM $BASE_PRE:$BASE_VER
+
+ARG DBSET=jammy
+
+ENV IDSET=sw
+ENV IDNUM=1000
+ENV IDTZD=Asia/Taipei
+ENV IDMSG=0
+ENV IDNON=0
+
+###//=========================
+#--ARG ENV_CTL="NO"
+ARG LOC_CTL="YES"
+
+ARG DEBIAN_FRONTEND=noninteractive
+USER root
+RUN set -xe; \
+    HOST_CTL=${HOST_CTL:-YES} && if [ "$HOST_CTL" = "YES" ]; then \
+        rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-get install -y --no-install-recommends \
+            apt-transport-https apt-utils \
+            software-properties-common \
+            openssh-server \
+            lsb-release \
+            sudo \
+            gnupg \
+            tzdata \
+            tofrodos \
+            vim nano \
+            zip unzip \
+            curl wget \
+            net-tools \
+            ; \
+        DB_CTL=${DB_CTL:-YES} && if [ "$DB_CTL" = "YES" ]; then \
+            sed -i '0,/^# deb-src/s//deb-src/' /etc/apt/sources.list; \
+            echo "deb http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src http://tw.archive.ubuntu.com/ubuntu $DBSET main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="focal"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            target="bionic"; \
+            echo "deb     [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://tw.archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb     [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            echo "deb-src [arch=amd64] http://archive.ubuntu.com/ubuntu ${target} main restricted universe multiverse" >> /etc/apt/sources.list; \
+            \
+            target="3B4FE6ACC0B21F32"; verget="C0B21F32"; \
+            ttkey1="hkp://keyserver.ubuntu.com:80"; \
+            ttkey2="hkp://pgp.mit.edu:80"; \
+            gpg --keyserver ${ttkey1} --recv-key ${target} || gpg --keyserver ${ttkey2} --recv-key ${target}; gpg -a --export ${verget} | gpg --dearmor -o /etc/apt/trusted.gpg.d/sw.gpg; \
+            \
+            rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+            apt-get clean && apt-get update --fix-missing; \
+            add-apt-repository universe -y; \
+            add-apt-repository restricted -y; \
+            add-apt-repository multiverse -y; \
+            apt-get clean && apt-get update --fix-missing; \
+        fi; \
+        ##//------------------------------------------------
+        YOCTO_CTL=${YOCTO_CTL:-YES} && if [ "$YOCTO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                build-essential \
+                chrpath \
+                cpio \
+                diffstat \
+                fluxbox \
+                gawk \
+                iproute2 \
+                iputils-ping \
+                locales \
+                screen \
+                socat \
+                sysstat \
+                texinfo \
+                tightvncserver \
+                tmux \
+                xz-utils \
+                zstd \
+                git-core \
+                git-lfs \
+                subversion \
+                \
+                python3-dev \
+                python3-pip \
+                python3-virtualenv \
+                \
+                python3-git \
+                python3-jinja2 \
+                python3-pexpect \
+                pylint \
+                xterm \
+                file \
+                lz4 \
+                \
+                libegl1-mesa libegl1-mesa-dev \
+                libsdl1.2-dev \
+                ; \
+        fi; \
+        ANDRO_CTL=${ANDRO_CTL:-YES} && if [ "$ANDRO_CTL" = "YES" ]; then \
+            apt-get install -y \
+                bison \
+                flex \
+                fontconfig \
+                x11proto-core-dev \
+                xsltproc \
+                zlib1g-dev \
+                libgl1-mesa-dev \
+                libx11-dev \
+                libxml2-utils \
+                libc6-dev-i386 \
+                lib32z1-dev \
+                ; \
+            \
+            apt-get install -y libncurses5 libncurses5-dev libncursesw5 libncursesw5-dev; \
+            apt-get install -y lib32ncurses5; \
+            apt-get install -y lib32ncurses-dev libncurses-dev libglib2.0-dev; \
+            wget -O /usr/local/bin/gn http://storage.googleapis.com/chromium-gn/3fd43e5e0dcc674f0a0c004ec290d04bb2e1c60e; \
+            chmod +x /usr/local/bin/gn; ln -s /usr/local/bin/gn /usr/bin/gn; \
+        fi; \
+        REPO_CTL=${REPO_CTL:-YES} && if [ "$REPO_CTL" = "YES" ]; then \
+            target="v2.32"; curl https://raw.githubusercontent.com/GerritCodeReview/git-repo/${target}/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        else \
+            curl -O https://storage.googleapis.com/git-repo-downloads/repo > /usr/local/bin/repo; \
+            chmod a+x /usr/local/bin/repo; \
+        fi; \
+        add-apt-repository ppa:deadsnakes/ppa -y; \
+        apt-get clean && apt-get update --fix-missing; \
+        apt-cache policy python3.9; \
+        apt-get install -y python3.9-dev python3.9-distutils; \
+        cd /usr/bin; ln -sf python3.9 python3; ln -sf python3.9-config python3-config; ln -sf pydoc3.9 pydoc3; \
+        cd /usr/lib/python3/dist-packages; \
+        lv=`find -iname apt_pkg.cpython-*-x86_64-linux-gnu.so` && echo "$lv" "apt_pkg.so" | xargs ln -sf; \
+        apt-get install -y python2-dev; \
+        cd /usr/bin; if [ -e python2 ]; then ln -sf python2 python; fi; \
+        ##//------------------------------------------------
+        CROSS_CTL=${CROSS_CTL:-YES} && if [ "$CROSS_CTL" = "YES" ]; then \
+            apt-get install -y g++-multilib; apt-get install -y g++-aarch64-linux-gnu; \
+            ##//apt-get install -y g++-11-multilib; apt-get install -y g++-11-aarch64-linux-gnu; \
+            apt-get install -y clang; \
+            apt-get install -y \
+                dpkg-cross \
+                bc \
+                m4 \
+                ccache \
+                libswitch-perl \
+                libreadline-dev \
+                libssl-dev \
+                openssl \
+                rpm2cpio \
+                rsync \
+                ; \
+            apt-get install -y libmagic1; \
+            apt-get install -y kmod fakeroot; \
+            apt-get build-dep -y linux; \
+        fi; \
+    fi; \
+    ##//------------------------------------------------------------------------
+    CROPS_CTL=${CROPS_CTL:-YES} && if [ "$CROPS_CTL" = "YES" ]; then \
+        if [ ! -f "/usr/bin/dumb-init" ]; then \
+            verget="1.2.5"; wget --no-check-certificate https://github.com/Yelp/dumb-init/releases/download/v${verget}/dumb-init_${verget}_amd64.deb; \
+            dpkg -i dumb-init_*.deb; rm -f dumb-init_${verget}_amd64.deb; \
+        fi; \
+        \
+        USER_CTL=${USER_CTL:-YES} && if [ "$USER_CTL" = "YES" ]; then \
+            lvn="poky_launch.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo '#!/bin/bash' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'workdir=$1; shift; cd $workdir;' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'echo "=========="' >> ${lvt}; \
+                echo 'echo '"'"'$@        => '"'"'$@' >> ${lvt}; \
+                echo 'echo '"'"'$workdir  => '"'"'$workdir' >> ${lvt}; \
+                echo "echo '\$HOME     => '\$HOME" >> ${lvt}; \
+                echo "echo '\$USER     => '\$USER" >> ${lvt}; \
+                echo "echo '\$uid \$gid => '\$(id -u) \$(id -g)" >> ${lvt}; \
+                echo "echo \"==========\"" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ -f "/usr/bin/dockerpoky.sh" ]; then source "/usr/bin/dockerpoky.sh"; fi;' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ $# -gt 0 ]; then' >> ${lvt}; \
+                echo '    exec "$@"' >> ${lvt}; \
+                echo 'else' >> ${lvt}; \
+                echo '    exec bash -i' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+            fi; \
+            lvn="dumb-entry.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo '#!/bin/bash' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ -f "/usr/bin/dockerdumb.sh" ]; then source "/usr/bin/dockerdumb.sh"; fi;' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ $IDMSG != "0" ]; then echo $@; fi' >> ${lvt}; \
+                echo 'if [ $IDNON == "0" ]; then' >> ${lvt}; \
+                echo '    exec "$@"' >> ${lvt}; \
+                echo 'else' >> ${lvt}; \
+                echo '    sh -c "${4:-bash}"' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+            fi; \
+            lvn="poky-entry.py"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo '#!/usr/bin/env python3' >> ${lvt}; \
+                echo '# -*- coding:utf-8 -*-' >> ${lvt}; \
+                echo '# coding=utf-8' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'import argparse' >> ${lvt}; \
+                echo 'import grp' >> ${lvt}; \
+                echo 'import os' >> ${lvt}; \
+                echo 'import pwd' >> ${lvt}; \
+                echo 'import subprocess' >> ${lvt}; \
+                echo 'import sys' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "def sanity_default():" >> ${lvt}; \
+                echo '    uid = 1000' >> ${lvt}; \
+                echo '    gid = 1000' >> ${lvt}; \
+                echo '    return uid, gid' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'parser = argparse.ArgumentParser()' >> ${lvt}; \
+                echo "parser.add_argument('--workdir'," >> ${lvt}; \
+                echo "                    default='/home/sw'," >> ${lvt}; \
+                echo "                    help='The active directory once the container is running.'" >> ${lvt}; \
+                echo "                         'In the abscence of the \"id\" argument, the uid and gid'" >> ${lvt}; \
+                echo "                         'of the workdir will also be used for the user in the container.')" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument('--id'," >> ${lvt}; \
+                echo "                    nargs='?'," >> ${lvt}; \
+                echo "                    help='uid and gid to use for the user inside the container.'" >> ${lvt}; \
+                echo "                         'It should be in the form uid:gid')" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument('cmd'," >> ${lvt}; \
+                echo "                    nargs=argparse.REMAINDER," >> ${lvt}; \
+                echo "                    help='command to run after setting up container,'" >> ${lvt}; \
+                echo "                         'often used for testing.')" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'args = parser.parse_args()' >> ${lvt}; \
+                echo 'args.workdir = os.getcwd()' >> ${lvt}; \
+                echo 'cpath = "/home/"' >> ${lvt}; \
+                echo 'cname = os.getenv("IDSET")' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if type(cname) != "str":' >> ${lvt}; \
+                echo '    cname = str(cname)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if len(os.getenv("IDSET")) != 0:' >> ${lvt}; \
+                echo '    cpath = cpath + cname' >> ${lvt}; \
+                echo 'else:' >> ${lvt}; \
+                echo '    cpath = cpath + "sw"' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'uid = ""' >> ${lvt}; \
+                echo 'gid = ""' >> ${lvt}; \
+                echo 'if args.id:' >> ${lvt}; \
+                echo '    uid, gid = args.id.split(":")' >> ${lvt}; \
+                echo '    if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '        print("id select 0")' >> ${lvt}; \
+                echo 'elif args.workdir != "/home" and os.path.exists(args.workdir):' >> ${lvt}; \
+                echo '    uid = os.stat(os.getcwd()).st_uid' >> ${lvt}; \
+                echo '    gid = os.stat(os.getcwd()).st_gid' >> ${lvt}; \
+                echo '    if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '        print("id select 1")' >> ${lvt}; \
+                echo 'elif os.path.exists(cpath):' >> ${lvt}; \
+                echo '    uid = os.stat(cpath).st_uid' >> ${lvt}; \
+                echo '    gid = os.stat(cpath).st_gid' >> ${lvt}; \
+                echo '    if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '        print("id select 2")' >> ${lvt}; \
+                echo 'else:' >> ${lvt}; \
+                echo '    uid, gid = sanity_default()' >> ${lvt}; \
+                echo '    if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '        print("id select 3")' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if uid == 0 or gid == 0:' >> ${lvt}; \
+                echo '    if cname != "root":' >> ${lvt}; \
+                echo '        uid, gid = sanity_default()' >> ${lvt}; \
+                echo '    if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '        print("change uid|gid")' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'idargs = "--uid={} --gid={}".format(uid, gid)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '    print("==========[poky-entry.py]")' >> ${lvt}; \
+                echo '    print("argsid  ",args.id)' >> ${lvt}; \
+                echo '    print("argcmd  ",args.cmd)' >> ${lvt}; \
+                echo '    print("workdir ",args.workdir)' >> ${lvt}; \
+                echo '    print("getcwd  ",os.getcwd())' >> ${lvt}; \
+                echo '    print("st_uid  ",os.stat(os.getcwd()).st_uid)' >> ${lvt}; \
+                echo '    print("st_gid  ",os.stat(os.getcwd()).st_gid)' >> ${lvt}; \
+                echo '    print()' >> ${lvt}; \
+                echo '    print("cname   ",cname)' >> ${lvt}; \
+                echo '    print("cpath   ",cpath)' >> ${lvt}; \
+                echo '    if os.path.exists(cpath):' >> ${lvt}; \
+                echo '        print("st_uid  ",os.stat(cpath).st_uid)' >> ${lvt}; \
+                echo '        print("st_gid  ",os.stat(cpath).st_gid)' >> ${lvt}; \
+                echo '    print("----------")' >> ${lvt}; \
+                echo '    print("uid     ",uid)' >> ${lvt}; \
+                echo '    print("gid     ",gid)' >> ${lvt}; \
+                echo '    print("idargs  ",idargs)' >> ${lvt}; \
+                echo '    print()' >> ${lvt}; \
+                echo >> ${lvt}; \
+                SETENVDIRECT="1"; \
+                if [ "$SETENVDIRECT" = "1" ]; then \
+                echo 'try:' >> ${lvt}; \
+                echo '    grp.getgrgid(gid)' >> ${lvt}; \
+                echo 'except KeyError:' >> ${lvt}; \
+                echo '    cmd = "sudo poky_groupadd.sh {} {}".format(gid, cname)' >> ${lvt}; \
+                echo '    subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'try:' >> ${lvt}; \
+                echo '    pwd.getpwuid(uid)' >> ${lvt}; \
+                echo 'except KeyError:' >> ${lvt}; \
+                echo '    cmd = "sudo poky_useradd.sh {} {} {}".format(uid, gid, cname)' >> ${lvt}; \
+                echo '    subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'cmd = "sudo -E -H -u {wn} poky_launch.sh {wd}".format(wn=cname, wd=args.workdir)' >> ${lvt}; \
+                else \
+                echo 'cmd = """poky_usersetup.py --username={wn} --workdir={wd} {idargs} poky_launch.sh {wd}""" .format(wn=cname, wd=args.workdir, idargs=idargs)' >> ${lvt}; \
+                fi; \
+                echo 'cmd = cmd.split()' >> ${lvt}; \
+                echo 'if args.cmd:' >> ${lvt}; \
+                echo '    cmd.extend(args.cmd)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if os.getenv("IDMSG") == str(1):' >> ${lvt}; \
+                echo '    print("cmd     ",cmd)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'os.execvp(cmd[0], cmd)' >> ${lvt}; \
+            fi; \
+            lvn="poky_usersetup.py"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            if [ "$SETENVDIRECT" != "1" ]; then touch ${lvt}; fi; \
+            if [ -f "${lvt}" ]; then \
+                echo '#!/usr/bin/env python3' >> ${lvt}; \
+                echo '# -*- coding:utf-8 -*-' >> ${lvt}; \
+                echo '# coding=utf-8' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'import argparse' >> ${lvt}; \
+                echo 'import grp' >> ${lvt}; \
+                echo 'import os' >> ${lvt}; \
+                echo 'import pwd' >> ${lvt}; \
+                echo 'import subprocess' >> ${lvt}; \
+                echo 'import sys' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "def sanity_check_workdir(workdir):" >> ${lvt}; \
+                echo "    st = os.stat(workdir)" >> ${lvt}; \
+                echo "    if st.st_uid == 0 or st.st_gid == 0:" >> ${lvt}; \
+                echo "        print('The uid:gid for \"{}\" is \"{}:{}\".'" >> ${lvt}; \
+                echo "              'The uid and gid must be non-zero.'" >> ${lvt}; \
+                echo "              'Please check to make sure the \"volume\" or \"bind\"'" >> ${lvt}; \
+                echo "              'specified using either \"-v\" or \"--mount\" to docker,'" >> ${lvt}; \
+                echo "              'exists and has a non-zero uid:gid.'.format(workdir, st.st_uid, st.st_gid))" >> ${lvt}; \
+                echo "        return False" >> ${lvt}; \
+                echo "    return True" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser = argparse.ArgumentParser()" >> ${lvt}; \
+                echo "parser.add_argument(\"--uid\"," >> ${lvt}; \
+                echo "                    type=int," >> ${lvt}; \
+                echo "                    help=\"uid to use for the user.\"" >> ${lvt}; \
+                echo "                         \"If not specified, the uid of the owner of WORKDIR is used\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"--gid\"," >> ${lvt}; \
+                echo "                    type=int," >> ${lvt}; \
+                echo "                    help=\"gid to use for the initial login group for the user.\"" >> ${lvt}; \
+                echo "                         \"If not specified, the gid of WORKDIR is used\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"--skel\"," >> ${lvt}; \
+                echo "                    default=\"\"," >> ${lvt}; \
+                echo "                    help=\"Directory to use as the skeleton for user's home\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"--username\"," >> ${lvt}; \
+                echo "                    default='sw'," >> ${lvt}; \
+                echo "                    help=\"username of the user to be modified\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"--workdir\"," >> ${lvt}; \
+                echo "                    default=\"/home/sw\"," >> ${lvt}; \
+                echo "                    help=\"directory to base the uid on\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"cmd\"," >> ${lvt}; \
+                echo "                    help=\"command to exec after setting up the user\")" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo "parser.add_argument(\"args\"," >> ${lvt}; \
+                echo "                    default=\"\"," >> ${lvt}; \
+                echo "                    nargs=argparse.REMAINDER)" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'args = parser.parse_args()' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if not args.uid:' >> ${lvt}; \
+                echo '    st = os.stat(args.workdir)' >> ${lvt}; \
+                echo '    args.uid = st.st_uid' >> ${lvt}; \
+                echo '    if not sanity_check_workdir(args.workdir):' >> ${lvt}; \
+                echo '        sys.exit(1)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if not args.gid:' >> ${lvt}; \
+                echo '    st = os.stat(args.workdir)' >> ${lvt}; \
+                echo '    args.gid = st.st_gid' >> ${lvt}; \
+                echo '    if not sanity_check_workdir(args.workdir):' >> ${lvt}; \
+                echo '        sys.exit(1)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'try:' >> ${lvt}; \
+                echo '    grp.getgrgid(args.gid)' >> ${lvt}; \
+                echo 'except KeyError:' >> ${lvt}; \
+                echo '    cmd = "sudo poky_groupadd.sh {} {}".format(args.gid, args.username)' >> ${lvt}; \
+                echo '    subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'try:' >> ${lvt}; \
+                echo '    pwd.getpwuid(args.uid)' >> ${lvt}; \
+                echo 'except KeyError:' >> ${lvt}; \
+                echo '    cmd = "sudo poky_useradd.sh {} {} {} {}".format(args.uid, args.gid, args.username, args.skel)' >> ${lvt}; \
+                echo '    subprocess.check_call(cmd.split(), stdout=sys.stdout, stderr=sys.stderr)' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'usercmd = [ args.cmd ] + args.args' >> ${lvt}; \
+                echo 'cmd = "sudo -E -H -u {} ".format(args.username)' >> ${lvt}; \
+                echo 'cmd = cmd.split() + usercmd' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'os.execvp(cmd[0], cmd)' >> ${lvt}; \
+            fi; \
+            lvn="poky_groupadd.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo '#!/bin/bash' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'gid=$(($1))' >> ${lvt}; \
+                echo 'groupname=$2' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ $gid -eq 0 ]; then' >> ${lvt}; \
+                echo '    echo "Refusing to use a gid of 0"' >> ${lvt}; \
+                echo '    exit 1' >> ${lvt}; \
+                echo 'else' >> ${lvt}; \
+                echo '    groupadd -o -g $gid "$groupname"' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+            fi; \
+            lvn="poky_useradd.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo '#!/bin/bash' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'uid=$(($1))' >> ${lvt}; \
+                echo 'gid=$(($2))' >> ${lvt}; \
+                echo 'username=$3' >> ${lvt}; \
+                echo 'if [ "$4" != "" ]; then skelarg="-k $4"; fi' >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ $uid -eq 0 ]; then' >> ${lvt}; \
+                echo '    echo "Refusing to use a uid of 0 (root)"' >> ${lvt}; \
+                echo '    exit 1' >> ${lvt}; \
+                echo 'elif [ $gid -eq 0 ]; then' >> ${lvt}; \
+                echo '    echo "Refusing to use a gid of 0 (root)"' >> ${lvt}; \
+                echo '    exit 1' >> ${lvt}; \
+                echo 'else' >> ${lvt}; \
+                echo '    if [ -d "/home/$username" ]; then' >> ${lvt}; \
+                echo '        useradd -M $skelarg -N -g $gid -o -u $uid "$username"' >> ${lvt}; \
+                echo '    else' >> ${lvt}; \
+                echo '        useradd -m $skelarg -N -g $gid -o -u $uid "$username"' >> ${lvt}; \
+                echo '    fi' >> ${lvt}; \
+                echo '    usermod -aG sudo "$username"' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+            fi; \
+        fi; \
+    fi; \
+    ENV_CTL=${ENV_CTL:-YES} && if [ "$ENV_CTL" = "YES" ]; then \
+        if [ -f "/etc/sudoers" ]; then \
+            sed -i 's/root\tALL=(ALL:ALL) ALL/root\tALL=(ALL:ALL) NOPASSWD:ALL/g' /etc/sudoers; \
+            sed -i 's/\%sudo\tALL=(ALL:ALL) ALL/\%sudo\tALL=(ALL:ALL) NOPASSWD:ALL/g' /etc/sudoers; \
+        fi; \
+        echo 'dash dash/sh boolean false' | debconf-set-selections; \
+        dpkg-reconfigure -f noninteractive dash; \
+        apt-get install -y locales language-pack-zh-hant language-pack-zh-hant-base; \
+        /usr/sbin/locale-gen zh_TW.UTF-8 en_US.UTF-8; \
+        dpkg-reconfigure -f noninteractive locales; \
+        update-locale LANGUAGE="en_US" LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8"; \
+        if [ "$IDTZD" != "Etc/UTC" ]; then \
+            ln -snf "/usr/share/zoneinfo/$IDTZD" /etc/localtime; \
+            echo $IDTZD > /etc/timezone; \
+            dpkg-reconfigure -f noninteractive tzdata; \
+        fi; \
+        LOC_CTL=${LOC_CTL:-NO} && if [ "$LOC_CTL" = "YES" ]; then \
+            ##//(=>ROOT)
+            lvn="dockerdumb.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo "if [ \"\$IDTZD\" != \"\" ] && [ \"\$IDTZD\" != \"$IDTZD\" ]; then" >> ${lvt}; \
+                echo "    ln -snf /usr/share/zoneinfo/\"\$IDTZD\" /etc/localtime" >> ${lvt}; \
+                echo "    sh -c 'echo \"\$IDTZD\" > /etc/timezone'" >> ${lvt}; \
+                echo "    sh -c 'dpkg-reconfigure -f noninteractive tzdata'" >> ${lvt}; \
+                echo "fi" >> ${lvt}; \
+                echo >> ${lvt}; \
+                echo 'if [ -f "/etc/hosts" ]; then' >> ${lvt}; \
+                echo '    sudo sh -c "echo 10.5.254.99  mce-tfs03  mce-tfs03.taipei.via.com.tw  mce-tfs03.via.com.tw >> /etc/hosts"' >> ${lvt}; \
+                echo 'fi' >> ${lvt}; \
+                echo >> ${lvt}; \
+            fi; \
+            ##//(=>USER)
+            lvn="dockerpoky.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+            if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+            touch ${lvt}; if [ -f "${lvt}" ]; then \
+                echo 'touch ~/.sudo_as_admin_successful' >> ${lvt}; \
+            fi; \
+        fi; \
+        lvn="dockertask.sh"; lvp="/usr/bin/"; lvt="${lvp}${lvn}"; \
+        if [ -f "${lvt}" ]; then rm -f ${lvt}; fi; \
+        touch ${lvt}; if [ -f "${lvt}" ]; then \
+            echo 1 > ${lvt}; \
+            sed -i '$a #!/bin/bash'                              ${lvt}; \
+            sed -i '$G'                                          ${lvt}; \
+            sed -i '$a #taskshell()'                             ${lvt}; \
+            sed -i '$a #{'                                       ${lvt}; \
+            sed -i '$a \    chmod 755 /usr/bin/*.sh 2>/dev/null' ${lvt}; \
+            sed -i '$a \    chmod 755 /usr/bin/*.py 2>/dev/null' ${lvt}; \
+            sed -i '$a #}'                                       ${lvt}; \
+            sed -i '$G'                                          ${lvt}; \
+            sed -i '$a #taskshell'                               ${lvt}; \
+            sed -i '1d'                                          ${lvt}; \
+            /bin/bash ${lvt}; sh -c "rm -f ${lvt}"; \
+        fi; \
+    fi; \
+    rm -rf /etc/apt/sources.list.d/*.list; rm -rf /var/lib/apt/lists/*; \
+    apt-get clean;
+
+WORKDIR /home
+ENTRYPOINT ["/usr/bin/dumb-entry.sh", "/usr/bin/dumb-init", "--", "/usr/bin/poky-entry.py"]
+CMD ["/bin/bash"]
